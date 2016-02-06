@@ -325,8 +325,8 @@ main(
 
     //---------------------------------------------------------------------
 
-	VC_IMAGE_TYPE_T imageType = VC_IMAGE_RGB888;
-	int32_t bytesPerPixel = 3;
+	VC_IMAGE_TYPE_T imageType = VC_IMAGE_RGBA32;
+	int32_t bytesPerPixel = 4;
 
     int32_t pitch = bytesPerPixel * ALIGN_TO_16(destInfo.width);
     int32_t length = pitch * destInfo.height;
