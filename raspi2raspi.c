@@ -256,6 +256,11 @@ main(
     int result = 0;
 
     //---------------------------------------------------------------------
+    // Make sure the VC_DISPLAY variable isn't set. 
+
+    unsetenv("VC_DISPLAY");
+
+    //---------------------------------------------------------------------
 
     DISPMANX_DISPLAY_HANDLE_T sourceDisplay
         = vc_dispmanx_display_open(sourceDisplayNumber);
@@ -325,8 +330,8 @@ main(
 
     //---------------------------------------------------------------------
 
-	VC_IMAGE_TYPE_T imageType = VC_IMAGE_RGBA32;
-	int32_t bytesPerPixel = 4;
+    VC_IMAGE_TYPE_T imageType = VC_IMAGE_RGBA32;
+    int32_t bytesPerPixel = 4;
 
     int32_t pitch = bytesPerPixel * ALIGN_TO_16(destInfo.width);
     int32_t length = pitch * destInfo.height;
