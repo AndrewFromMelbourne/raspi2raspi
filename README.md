@@ -9,6 +9,7 @@ display.
     --source <number> - Raspberry Pi display number (default 0)
     --destination <number> - Raspberry Pi display number (default 5)
     --fps <fps> - set desired frames per second (default 10 frames per second)
+    --layer <number> - layer number (default 1)
     --pidfile <pidfile> - create and lock PID file (if being run as a daemon)
     --help - print usage and exit
 

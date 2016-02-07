@@ -60,6 +60,7 @@
 
 #define DEFAULT_SOURCE_DISPLAY_NUMBER 0
 #define DEFAULT_DESTINATION_DISPLAY_NUMBER 5
+#define DEFAULT_LAYER_NUMBER 1
 #define DEFAULT_FPS 10
 
 //-------------------------------------------------------------------------
@@ -83,6 +84,8 @@ printUsage(
     fprintf(fp, " (default %d)\n", DEFAULT_DESTINATION_DISPLAY_NUMBER);
     fprintf(fp, "    --fps <fps> - set desired frames per second");
     fprintf(fp, " (default %d frames per second)\n", DEFAULT_FPS);
+    fprintf(fp, "    --layer <number> - layer number");
+    fprintf(fp, " (default %d)\n", DEFAULT_LAYER_NUMBER);
     fprintf(fp, "    --pidfile <pidfile> - create and lock PID file");
     fprintf(fp, " (if being run as a daemon)\n");
     fprintf(fp, "    --help - print usage and exit\n");
@@ -119,16 +122,18 @@ main(
     bool isDaemon =  false;
     uint32_t sourceDisplayNumber = DEFAULT_SOURCE_DISPLAY_NUMBER;
     uint32_t destDisplayNumber = DEFAULT_DESTINATION_DISPLAY_NUMBER;
+	int32_t layerNumber = DEFAULT_LAYER_NUMBER;
     const char *pidfile = NULL;
 
     //---------------------------------------------------------------------
 
-    static const char *sopts = "d:f:hp:s:D";
+    static const char *sopts = "d:f:hl:p:s:D";
     static struct option lopts[] = 
     {
         { "destination", required_argument, NULL, 'd' },
         { "fps", required_argument, NULL, 'f' },
         { "help", no_argument, NULL, 'h' },
+        { "layer", required_argument, NULL, 'l' },
         { "pidfile", required_argument, NULL, 'p' },
         { "source", required_argument, NULL, 's' },
         { "daemon", no_argument, NULL, 'D' },
@@ -166,6 +171,11 @@ main(
             printUsage(stdout, program);
             exit(EXIT_SUCCESS);
 
+            break;
+
+        case 'l':
+
+            layerNumber = atoi(optarg);
             break;
 
         case 'p':
@@ -330,35 +340,10 @@ main(
 
     //---------------------------------------------------------------------
 
-    VC_IMAGE_TYPE_T imageType = VC_IMAGE_RGBA32;
-    int32_t bytesPerPixel = 4;
-
-    int32_t pitch = bytesPerPixel * ALIGN_TO_16(destInfo.width);
-    int32_t length = pitch * destInfo.height;
-
-    void *image = malloc(length);
-
-    if (image == NULL)
-    {
-        messageLog(isDaemon,
-                   program,
-                   LOG_ERR,
-                   "unable to allocate image buffer");
-        exitAndRemovePidFile(EXIT_FAILURE, pfh);
-    }
-
-    //---------------------------------------------------------------------
-
     uint32_t image_ptr;
 
-    DISPMANX_RESOURCE_HANDLE_T sourceResource = 
-        vc_dispmanx_resource_create(imageType,
-                                    destInfo.width,
-                                    destInfo.height,
-                                    &image_ptr);
-
-    DISPMANX_RESOURCE_HANDLE_T destResource = 
-        vc_dispmanx_resource_create(imageType,
+    DISPMANX_RESOURCE_HANDLE_T resource = 
+        vc_dispmanx_resource_create(VC_IMAGE_RGBA32,
                                     destInfo.width,
                                     destInfo.height,
                                     &image_ptr);
@@ -374,13 +359,6 @@ main(
     
     VC_RECT_T destRect;
     vc_dispmanx_rect_set(&destRect, 0, 0, 0, 0);
-
-    VC_RECT_T bmpRect;
-    vc_dispmanx_rect_set(&bmpRect,
-                         0,
-                         0,
-                         destInfo.width,
-                         destInfo.height);
 
     //---------------------------------------------------------------------
 
@@ -405,9 +383,9 @@ main(
     DISPMANX_ELEMENT_HANDLE_T element;
     element = vc_dispmanx_element_add(update,
                                       destDisplay,
-                                      10,
+                                      layerNumber,
                                       &destRect,
-                                      destResource,
+                                      resource,
                                       &sourceRect,
                                       DISPMANX_PROTECTION_NONE,
                                       &alpha,
@@ -439,7 +417,7 @@ main(
         //-----------------------------------------------------------------
 
         result = vc_dispmanx_snapshot(sourceDisplay,
-                                      sourceResource,
+                                      resource,
                                       DISPMANX_NO_ROTATE);
 
         if (result != 0)
@@ -451,38 +429,9 @@ main(
             exitAndRemovePidFile(EXIT_FAILURE, pfh);
         }
 
-        result = vc_dispmanx_resource_read_data(sourceResource,
-                                                &bmpRect,
-                                                image,
-                                                pitch);
-
-        if (result != 0)
-        {
-            messageLog(isDaemon,
-                       program,
-                       LOG_ERR,
-                       "DispmanX read data failed");
-            exitAndRemovePidFile(EXIT_FAILURE, pfh);
-        }
-
         //-----------------------------------------------------------------
 
-        result = vc_dispmanx_resource_write_data(destResource,
-                                                 imageType,
-                                                 pitch,
-                                                 image,
-                                                 &bmpRect);
-
-        if (result != 0)
-        {
-            messageLog(isDaemon,
-                       program,
-                       LOG_ERR,
-                       "DispmanX write data failed");
-            exitAndRemovePidFile(EXIT_FAILURE, pfh);
-        }
-
-        update = vc_dispmanx_update_start(10);
+        update = vc_dispmanx_update_start(0);
 
         if (update == 0)
         {
@@ -493,7 +442,7 @@ main(
             exitAndRemovePidFile(EXIT_FAILURE, pfh);
         }
 
-        vc_dispmanx_element_change_source(update, element, destResource);
+        vc_dispmanx_element_change_source(update, element, resource);
         vc_dispmanx_update_submit_sync(update);
 
         //-----------------------------------------------------------------
@@ -516,13 +465,10 @@ main(
     vc_dispmanx_element_remove(update, element);
     vc_dispmanx_update_submit_sync(update);
 
-    vc_dispmanx_resource_delete(sourceResource);
-    vc_dispmanx_resource_delete(destResource);
+    vc_dispmanx_resource_delete(resource);
 
     vc_dispmanx_display_close(sourceDisplay);
     vc_dispmanx_display_close(destDisplay);
-
-    free(image);
 
     //---------------------------------------------------------------------
 
