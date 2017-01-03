@@ -125,7 +125,7 @@ main(
     bool isDaemon =  false;
     uint32_t sourceDisplayNumber = DEFAULT_SOURCE_DISPLAY_NUMBER;
     uint32_t destDisplayNumber = DEFAULT_DESTINATION_DISPLAY_NUMBER;
-	int32_t layerNumber = DEFAULT_LAYER_NUMBER;
+    int32_t layerNumber = DEFAULT_LAYER_NUMBER;
     const char *pidfile = NULL;
 
     //---------------------------------------------------------------------
@@ -182,9 +182,10 @@ main(
             layerNumber = atoi(optarg);
             break;
 
-		case 'c':
-			center = true;
-			break;
+        case 'c':
+
+            center = true;
+            break;
 
         case 'p':
 
@@ -366,24 +367,25 @@ main(
                          destInfo.height << 16);
     
     VC_RECT_T destRect;
-    if ( center
-		 && (sourceInfo.width <= destInfo.width)
-		 && (sourceInfo.height <= destInfo.height) )
-	{
-		vc_dispmanx_rect_set(&destRect,
-							 (destInfo.width - sourceInfo.width) / 2,
-							 (destInfo.height - sourceInfo.height) / 2,
-							 sourceInfo.width,
-							 sourceInfo.height);
-		messageLog(isDaemon,
-				   program,
-				   LOG_INFO,
-				   "centering source display within destination display");
-	}
-	else
-	{
-		vc_dispmanx_rect_set(&destRect, 0, 0, 0, 0);
-	}
+    if (center
+         && (sourceInfo.width <= destInfo.width)
+         && (sourceInfo.height <= destInfo.height))
+    {
+        vc_dispmanx_rect_set(&destRect,
+                             (destInfo.width - sourceInfo.width) / 2,
+                             (destInfo.height - sourceInfo.height) / 2,
+                             sourceInfo.width,
+                             sourceInfo.height);
+
+        messageLog(isDaemon,
+                   program,
+                   LOG_INFO,
+                   "centering source display within destination display");
+    }
+    else
+    {
+        vc_dispmanx_rect_set(&destRect, 0, 0, 0, 0);
+    }
 
     //---------------------------------------------------------------------
 
