@@ -86,6 +86,8 @@ printUsage(
     fprintf(fp, " (default %d frames per second)\n", DEFAULT_FPS);
     fprintf(fp, "    --layer <number> - layer number");
     fprintf(fp, " (default %d)\n", DEFAULT_LAYER_NUMBER);
+    fprintf(fp, "    --center - center the source in the destination");
+    fprintf(fp, " without upscaling\n");
     fprintf(fp, "    --pidfile <pidfile> - create and lock PID file");
     fprintf(fp, " (if being run as a daemon)\n");
     fprintf(fp, "    --help - print usage and exit\n");
@@ -119,6 +121,7 @@ main(
 
     int fps = DEFAULT_FPS;
     suseconds_t frameDuration =  1000000 / fps;
+    bool center = false;
     bool isDaemon =  false;
     uint32_t sourceDisplayNumber = DEFAULT_SOURCE_DISPLAY_NUMBER;
     uint32_t destDisplayNumber = DEFAULT_DESTINATION_DISPLAY_NUMBER;
@@ -127,7 +130,7 @@ main(
 
     //---------------------------------------------------------------------
 
-    static const char *sopts = "d:f:hl:p:s:D";
+    static const char *sopts = "d:f:hl:p:s:Dc";
     static struct option lopts[] = 
     {
         { "destination", required_argument, NULL, 'd' },
@@ -136,6 +139,7 @@ main(
         { "layer", required_argument, NULL, 'l' },
         { "pidfile", required_argument, NULL, 'p' },
         { "source", required_argument, NULL, 's' },
+        { "center", no_argument, NULL, 'c' },
         { "daemon", no_argument, NULL, 'D' },
         { NULL, no_argument, NULL, 0 }
     };
@@ -177,6 +181,10 @@ main(
 
             layerNumber = atoi(optarg);
             break;
+
+		case 'c':
+			center = true;
+			break;
 
         case 'p':
 
@@ -358,7 +366,24 @@ main(
                          destInfo.height << 16);
     
     VC_RECT_T destRect;
-    vc_dispmanx_rect_set(&destRect, 0, 0, 0, 0);
+    if ( center
+		 && (sourceInfo.width <= destInfo.width)
+		 && (sourceInfo.height <= destInfo.height) )
+	{
+		vc_dispmanx_rect_set(&destRect,
+							 (destInfo.width - sourceInfo.width) / 2,
+							 (destInfo.height - sourceInfo.height) / 2,
+							 sourceInfo.width,
+							 sourceInfo.height);
+		messageLog(isDaemon,
+				   program,
+				   LOG_INFO,
+				   "centering source display within destination display");
+	}
+	else
+	{
+		vc_dispmanx_rect_set(&destRect, 0, 0, 0, 0);
+	}
 
     //---------------------------------------------------------------------
 
