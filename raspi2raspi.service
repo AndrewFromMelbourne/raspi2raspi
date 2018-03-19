@@ -5,6 +5,8 @@ Description=Copy Raspberry Pi screen to a secondary framebuffer
 Type=forking
 PIDFile=/var/run/raspi2raspi.pid
 ExecStart=/usr/local/bin/raspi2raspi --daemon --source 0 --destination 5 --pidfile /var/run/raspi2raspi.pid
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
